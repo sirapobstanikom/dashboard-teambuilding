@@ -5,7 +5,7 @@ import { TEAMS, TEAM_LABELS } from '../constants'
 import './AdminPage.css'
 
 export default function AdminPage() {
-  const { scores, setAllScores, setLastUpdate } = useScore()
+  const { scores, setAllScores, setLastUpdate, flushToDatabase } = useScore()
   const [formScores, setFormScores] = useState({ ...scores })
   const [saved, setSaved] = useState(false)
 
@@ -29,14 +29,16 @@ export default function AdminPage() {
     setLastUpdate(new Date())
   }
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault()
     const scoresToSet = {}
     TEAMS.forEach(t => {
       scoresToSet[t] = formScores[t] === '' ? 0 : Number(formScores[t])
     })
+    const now = new Date()
     setAllScores(scoresToSet)
-    setLastUpdate(new Date())
+    setLastUpdate(now)
+    await flushToDatabase({ scores: scoresToSet, lastUpdate: now })
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -78,7 +80,7 @@ export default function AdminPage() {
         </button>
       </form>
 
-      <p className="admin-hint">Dashboard จะอัปเดตตามค่าที่บันทึก (รองรับหลายแท็บผ่าน localStorage)</p>
+      <p className="admin-hint">Dashboard จะอัปเดตตามค่าที่บันทึก (เก็บใน database แบบเรียลไทม์)</p>
     </div>
   )
 }

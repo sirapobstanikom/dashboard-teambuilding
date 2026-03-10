@@ -26,6 +26,21 @@ npm run build
 npm run preview
 ```
 
+## Deploy บน Vercel (ใส่ Environment Variables)
+
+1. ไปที่ [Vercel Dashboard](https://vercel.com/dashboard) → เลือกโปรเจกต์ (หรือ Import โปรเจกต์จาก Git)
+2. ไปที่ **Settings** → **Environment Variables**
+3. ใส่ตัวแปรต่อไปนี้ (ใช้ค่าจาก Supabase Dashboard → Project Settings → API):
+
+| Name | Value | Environment |
+|------|--------|--------------|
+| `VITE_SUPABASE_URL` | `https://xxxxx.supabase.co` (Project URL) | Production, Preview, Development |
+| `VITE_SUPABASE_ANON_KEY` | `eyJ...` (anon public key) | Production, Preview, Development |
+
+4. กด **Save** แล้วไปที่ **Deployments** → กด **Redeploy** เพื่อให้ build ใหม่ใช้ค่า env
+
+> ถ้าไม่ใส่ env คะแนนจะใช้แค่ localStorage (ไม่ sync กับ database)
+
 ## โครงสร้างหน้าจอ
 
 - **หัวข้อ**: Olympic Challenge Dashboard (ตรงกลาง)
@@ -58,4 +73,4 @@ npm run preview
 - `src/components/` — Header, RoundTimer, ScoreboardStrip, TeamCard, Confetti, LiveTicker
 - `src/pages/DashboardPage.jsx` — หน้า Dashboard แสดงผล
 - `src/pages/AdminPage.jsx` — หน้า Admin สำหรับกรอกคะแนน / เหรียญ / ตัวจับเวลา
-- `src/context/ScoreContext.jsx` — state ร่วม (คะแนน, เหรียญ, เวลา) + sync ผ่าน localStorage รองรับหลายแท็บ
+- `src/context/ScoreContext.jsx` — state ร่วม (คะแนน, เหรียญ, เวลา) เก็บใน Supabase แบบเรียลไทม์ (หรือ localStorage เมื่อไม่ได้ใช้ Supabase)

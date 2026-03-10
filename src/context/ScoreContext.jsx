@@ -8,6 +8,13 @@ const DASHBOARD_ROW_ID = 'default'
 const defaultScores = { green: 0, red: 0, yellow: 0, blue: 0 }
 const defaultMedals = { green: 0, red: 0, yellow: 0, blue: 0 }
 
+const defaultState = {
+  scores: { ...defaultScores },
+  medals: { ...defaultMedals },
+  lastUpdate: null,
+  timerSeconds: 5 * 60,
+}
+
 function loadStateFromStorage() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -21,12 +28,7 @@ function loadStateFromStorage() {
       }
     }
   } catch (_) {}
-  return {
-    scores: { ...defaultScores },
-    medals: { ...defaultMedals },
-    lastUpdate: null,
-    timerSeconds: 5 * 60,
-  }
+  return { ...defaultState }
 }
 
 function saveStateToStorage(scores, medals, lastUpdate, timerSeconds) {
@@ -42,7 +44,8 @@ function saveStateToStorage(scores, medals, lastUpdate, timerSeconds) {
 
 const ScoreContext = createContext(null)
 
-const initialState = loadStateFromStorage()
+// เมื่อใช้ Supabase ให้ใช้ database เป็นแหล่งความจริงเดียว ไม่โหลดจาก localStorage
+const initialState = isSupabaseEnabled() ? defaultState : loadStateFromStorage()
 
 export function ScoreProvider({ children }) {
   const [scores, setScoresState] = useState(() => initialState.scores)
@@ -51,6 +54,7 @@ export function ScoreProvider({ children }) {
   const [timerSeconds, setTimerSecondsState] = useState(() => initialState.timerSeconds)
   const saveTimeoutRef = useRef(null)
   const isRemoteUpdateRef = useRef(false)
+  const hasFetchedRef = useRef(false)
 
   const setScores = useCallback((value) => {
     setScoresState(typeof value === 'function' ? value : () => value)
@@ -106,17 +110,23 @@ export function ScoreProvider({ children }) {
           if (dashboardRes.data.last_update) setLastUpdateState(new Date(dashboardRes.data.last_update))
           if (typeof dashboardRes.data.timer_seconds === 'number') setTimerSecondsState(dashboardRes.data.timer_seconds)
         }
-      } catch (_) {}
+      } catch (e) {
+        console.error('[Supabase] load failed:', e)
+      } finally {
+        hasFetchedRef.current = true
+      }
     }
     fetchState()
     return () => { cancelled = true }
   }, [])
 
-  // Persist to localStorage and Supabase when state changes
+  // Persist: ถ้าใช้ Supabase ให้เก็บเฉพาะใน database (เรียลไทม์), ถ้าไม่ใช้ให้เก็บใน localStorage
   useEffect(() => {
-    saveStateToStorage(scores, medals, lastUpdate, timerSeconds)
+    if (!isSupabaseEnabled()) {
+      saveStateToStorage(scores, medals, lastUpdate, timerSeconds)
+    }
 
-    if (!isSupabaseEnabled() || !supabase || isRemoteUpdateRef.current) {
+    if (!isSupabaseEnabled() || !supabase || isRemoteUpdateRef.current || !hasFetchedRef.current) {
       isRemoteUpdateRef.current = false
       return
     }
@@ -126,16 +136,14 @@ export function ScoreProvider({ children }) {
       saveTimeoutRef.current = null
       const now = new Date().toISOString()
       try {
-        await Promise.all([
-          supabase.from('team_scores').upsert(
-            TEAMS.map((team) => ({
-              team,
-              score: scores[team] ?? 0,
-              medals: medals[team] ?? 0,
-              updated_at: now,
-            })),
-            { onConflict: 'team' }
-          ),
+        const teamRows = TEAMS.map((team) => ({
+          team,
+          score: Number(scores[team]) || 0,
+          medals: Number(medals[team]) || 0,
+          updated_at: now,
+        }))
+        const [teamRes, dashboardRes] = await Promise.all([
+          supabase.from('team_scores').upsert(teamRows, { onConflict: 'team' }),
           supabase.from('dashboard_state').upsert({
             id: DASHBOARD_ROW_ID,
             scores,
@@ -145,7 +153,11 @@ export function ScoreProvider({ children }) {
             updated_at: now,
           }, { onConflict: 'id' }),
         ])
-      } catch (_) {}
+        if (teamRes.error) console.error('[Supabase] team_scores:', teamRes.error.message, teamRes.error)
+        if (dashboardRes.error) console.error('[Supabase] dashboard_state:', dashboardRes.error.message, dashboardRes.error)
+      } catch (err) {
+        console.error('[Supabase] save failed:', err)
+      }
     }, 400)
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
@@ -193,8 +205,9 @@ export function ScoreProvider({ children }) {
     }
   }, [])
 
-  // Fallback: listen for storage events (other tab, when Supabase is off)
+  // เมื่อไม่ใช้ Supabase: sync หลายแท็บผ่าน localStorage
   useEffect(() => {
+    if (isSupabaseEnabled()) return
     const onStorage = (e) => {
       if (e.key !== STORAGE_KEY || !e.newValue) return
       try {
@@ -237,6 +250,39 @@ export function ScoreProvider({ children }) {
     setLastUpdateState(new Date())
   }, [])
 
+  // บันทึกลง database ทันที (เรียกจาก Admin ตอนกดปุ่มอัปเดต) — รับ payload เพื่อเขียนค่าที่กดบันทึกเลย ไม่รอ state
+  const flushToDatabase = useCallback(async (payload) => {
+    if (!isSupabaseEnabled() || !supabase) return
+    const s = payload?.scores ?? scores
+    const m = payload?.medals ?? medals
+    const lu = payload?.lastUpdate !== undefined ? payload.lastUpdate : lastUpdate
+    const ts = payload?.timerSeconds !== undefined ? payload.timerSeconds : timerSeconds
+    const now = new Date().toISOString()
+    try {
+      const teamRows = TEAMS.map((team) => ({
+        team,
+        score: Number(s[team]) || 0,
+        medals: Number(m[team]) || 0,
+        updated_at: now,
+      }))
+      const [teamRes, dashboardRes] = await Promise.all([
+        supabase.from('team_scores').upsert(teamRows, { onConflict: 'team' }),
+        supabase.from('dashboard_state').upsert({
+          id: DASHBOARD_ROW_ID,
+          scores: s,
+          medals: m,
+          last_update: lu ? (lu instanceof Date ? lu.toISOString() : new Date(lu).toISOString()) : null,
+          timer_seconds: ts,
+          updated_at: now,
+        }, { onConflict: 'id' }),
+      ])
+      if (teamRes.error) console.error('[Supabase] team_scores:', teamRes.error.message)
+      if (dashboardRes.error) console.error('[Supabase] dashboard_state:', dashboardRes.error.message)
+    } catch (err) {
+      console.error('[Supabase] flush failed:', err)
+    }
+  }, [scores, medals, lastUpdate, timerSeconds])
+
   const value = {
     scores,
     medals,
@@ -249,6 +295,7 @@ export function ScoreProvider({ children }) {
     updateTeamScore,
     setAllScores,
     setAllMedals,
+    flushToDatabase,
   }
 
   return (
