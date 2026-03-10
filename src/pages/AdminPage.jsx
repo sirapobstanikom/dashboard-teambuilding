@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useScore } from '../context/ScoreContext'
 import { TEAMS, TEAM_LABELS } from '../constants'
@@ -8,19 +8,23 @@ export default function AdminPage() {
   const { scores, setAllScores, setLastUpdate, flushToDatabase } = useScore()
   const [formScores, setFormScores] = useState({ ...scores })
   const [saved, setSaved] = useState(false)
+  const hasUserEditedRef = useRef(false)
 
-  // โหลดค่าจาก context เฉพาะตอนเปิดหน้า Admin ครั้งแรก ไม่ sync ตอน scores เปลี่ยน (ป้องกันค่าที่กำลังพิมพ์ถูกทับ)
+  // ดึงค่าเก่าจาก context/DB มาใส่ฟอร์ม — แต่ถ้าผู้ใช้กำลังแก้ไขอยู่ ไม่ทับ (ป้องกันบัค)
   useEffect(() => {
-    setFormScores({ ...scores })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    if (!hasUserEditedRef.current) {
+      setFormScores({ ...scores })
+    }
+  }, [scores])
 
   const handleScoreChange = (team, value) => {
+    hasUserEditedRef.current = true
     const n = value === '' ? '' : Math.max(0, parseInt(value, 10) || 0)
     setFormScores(prev => ({ ...prev, [team]: n === '' ? '' : n }))
   }
 
   const handleAdd = (team, amount) => {
+    hasUserEditedRef.current = true
     const current = Number(formScores[team]) || 0
     const next = current + amount
     const nextScores = { ...formScores, [team]: next }
@@ -41,6 +45,7 @@ export default function AdminPage() {
     setAllScores(scoresToSet)
     setLastUpdate(now)
     await flushToDatabase({ scores: scoresToSet, lastUpdate: now })
+    hasUserEditedRef.current = false
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
