@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Header from '../components/Header'
 import ScoreboardStrip from '../components/ScoreboardStrip'
@@ -9,6 +9,8 @@ import LiveTicker from '../components/LiveTicker'
 import { useScore } from '../context/ScoreContext'
 import { TEAMS, MAX_SCORE } from '../constants'
 
+const ADMIN_LINK_KEY = 'dashboard_show_admin'
+
 function getRankedTeams(scores) {
   return [...TEAMS].sort((a, b) => scores[b] - scores[a])
 }
@@ -16,6 +18,12 @@ function getRankedTeams(scores) {
 export default function DashboardPage() {
   const { scores, lastUpdate } = useScore()
   const confettiRef = useRef(null)
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(ADMIN_LINK_KEY, '1')
+    } catch {}
+  }, [])
 
   const rankedTeams = getRankedTeams(scores)
   const rankByTeam = rankedTeams.reduce((acc, team, i) => ({ ...acc, [team]: i + 1 }), {})
@@ -26,7 +34,7 @@ export default function DashboardPage() {
       <div className="spotlight-grid" />
       <FallingColors />
 
-      <Link to="/admin" className="dashboard-admin-link dashboard-admin-link--subtle" title="Admin">·</Link>
+      <Link to="/admin" className="dashboard-admin-link dashboard-admin-link--subtle" title="Admin" aria-label="Admin">Admin</Link>
 
       <main className="dashboard">
         <Header />
