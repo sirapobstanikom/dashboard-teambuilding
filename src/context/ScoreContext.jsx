@@ -164,34 +164,24 @@ export function ScoreProvider({ children }) {
     }
   }, [scores, medals, lastUpdate, timerSeconds])
 
-  // Realtime: sync เมื่อมี client อื่นอัปเดต (ทั้ง team_scores และ dashboard_state)
+  // Realtime: อัปเดตหน้าบ้านทันทีเมื่อมีค่าเข้า database (ใช้ payload โดยตรง ไม่ refetch)
   useEffect(() => {
     if (!isSupabaseEnabled() || !supabase) return
     const channel = supabase
       .channel('dashboard_sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'team_scores' }, async () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'team_scores' }, (payload) => {
+        const row = payload?.new
+        if (!row || !TEAMS.includes(row.team)) return
         isRemoteUpdateRef.current = true
-        const { data } = await supabase.from('team_scores').select('team, score, medals, updated_at').in('team', TEAMS)
-        if (!data || !data.length) return
-        const scores = { ...defaultScores }
-        const medals = { ...defaultMedals }
-        let lastUpdate = null
-        data.forEach((row) => {
-          if (TEAMS.includes(row.team)) {
-            scores[row.team] = Number(row.score) || 0
-            medals[row.team] = Number(row.medals) || 0
-            if (row.updated_at) {
-              const d = new Date(row.updated_at)
-              if (!lastUpdate || d > lastUpdate) lastUpdate = d
-            }
-          }
-        })
-        setScoresState(scores)
-        setMedalsState(medals)
-        if (lastUpdate) setLastUpdateState(lastUpdate)
+        const team = row.team
+        const score = Number(row.score) || 0
+        const medalsCount = Number(row.medals) || 0
+        setScoresState(prev => ({ ...prev, [team]: score }))
+        setMedalsState(prev => ({ ...prev, [team]: medalsCount }))
+        if (row.updated_at) setLastUpdateState(new Date(row.updated_at))
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'dashboard_state' }, (payload) => {
-        const row = payload.new
+        const row = payload?.new
         if (!row || row.id !== DASHBOARD_ROW_ID) return
         isRemoteUpdateRef.current = true
         if (row.scores && typeof row.scores === 'object') setScoresState(prev => ({ ...defaultScores, ...prev, ...row.scores }))
@@ -199,7 +189,9 @@ export function ScoreProvider({ children }) {
         if (row.last_update) setLastUpdateState(new Date(row.last_update))
         if (typeof row.timer_seconds === 'number') setTimerSecondsState(row.timer_seconds)
       })
-      .subscribe()
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') console.debug('[Supabase Realtime] dashboard_sync subscribed')
+      })
     return () => {
       supabase.removeChannel(channel)
     }
