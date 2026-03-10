@@ -9,9 +9,11 @@ export default function AdminPage() {
   const [formScores, setFormScores] = useState({ ...scores })
   const [saved, setSaved] = useState(false)
 
+  // โหลดค่าจาก context เฉพาะตอนเปิดหน้า Admin ครั้งแรก ไม่ sync ตอน scores เปลี่ยน (ป้องกันค่าที่กำลังพิมพ์ถูกทับ)
   useEffect(() => {
     setFormScores({ ...scores })
-  }, [scores])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleScoreChange = (team, value) => {
     const n = value === '' ? '' : Math.max(0, parseInt(value, 10) || 0)

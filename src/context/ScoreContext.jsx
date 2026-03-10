@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import { TEAMS } from '../constants'
 import { supabase, isSupabaseEnabled } from '../lib/supabase'
 
@@ -48,6 +49,7 @@ const ScoreContext = createContext(null)
 const initialState = isSupabaseEnabled() ? defaultState : loadStateFromStorage()
 
 export function ScoreProvider({ children }) {
+  const location = useLocation()
   const [scores, setScoresState] = useState(() => initialState.scores)
   const [medals, setMedalsState] = useState(() => initialState.medals)
   const [lastUpdate, setLastUpdateState] = useState(() => initialState.lastUpdate)
@@ -55,6 +57,7 @@ export function ScoreProvider({ children }) {
   const saveTimeoutRef = useRef(null)
   const isRemoteUpdateRef = useRef(false)
   const hasFetchedRef = useRef(false)
+  const isAdminPage = location.pathname === '/admin'
 
   const setScores = useCallback((value) => {
     setScoresState(typeof value === 'function' ? value : () => value)
@@ -195,9 +198,9 @@ export function ScoreProvider({ children }) {
     }
   }, [])
 
-  // โพลจาก DB ทุก 2 วินาที (เมื่อแท็บเปิดอยู่) — เครื่องที่เปิด Dashboard จะอัปเดตเองโดยไม่ต้องกด refresh
+  // โพลจาก DB ทุก 2 วินาที (เมื่ออยู่หน้า Dashboard เท่านั้น ไม่โพลตอนอยู่หน้า Admin เพื่อไม่ให้ค่าที่กำลังพิมพ์ถูกทับ)
   useEffect(() => {
-    if (!isSupabaseEnabled() || !supabase) return
+    if (!isSupabaseEnabled() || !supabase || isAdminPage) return
     let cancelled = false
     const poll = async () => {
       if (cancelled || document.visibilityState !== 'visible') return
@@ -241,7 +244,7 @@ export function ScoreProvider({ children }) {
       cancelled = true
       clearInterval(id)
     }
-  }, [])
+  }, [isAdminPage])
 
   // เมื่อไม่ใช้ Supabase: sync หลายแท็บผ่าน localStorage
   useEffect(() => {
