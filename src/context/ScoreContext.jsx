@@ -164,7 +164,7 @@ export function ScoreProvider({ children }) {
     }
   }, [scores, medals, lastUpdate, timerSeconds])
 
-  // Realtime: อัปเดตหน้าบ้านทันทีเมื่อมีค่าเข้า database (ใช้ payload โดยตรง ไม่ refetch)
+  // Realtime: อัปเดตหน้าบ้านทันทีเมื่อมีค่าเข้า database (ใช้ payload โดยตรง)
   useEffect(() => {
     if (!isSupabaseEnabled() || !supabase) return
     const channel = supabase
@@ -189,11 +189,57 @@ export function ScoreProvider({ children }) {
         if (row.last_update) setLastUpdateState(new Date(row.last_update))
         if (typeof row.timer_seconds === 'number') setTimerSecondsState(row.timer_seconds)
       })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') console.debug('[Supabase Realtime] dashboard_sync subscribed')
-      })
+      .subscribe()
     return () => {
       supabase.removeChannel(channel)
+    }
+  }, [])
+
+  // โพลจาก DB ทุก 2 วินาที (เมื่อแท็บเปิดอยู่) — เครื่องที่เปิด Dashboard จะอัปเดตเองโดยไม่ต้องกด refresh
+  useEffect(() => {
+    if (!isSupabaseEnabled() || !supabase) return
+    let cancelled = false
+    const poll = async () => {
+      if (cancelled || document.visibilityState !== 'visible') return
+      try {
+        const [teamsRes, dashboardRes] = await Promise.all([
+          supabase.from('team_scores').select('team, score, medals, updated_at').in('team', TEAMS),
+          supabase.from('dashboard_state').select('scores, medals, last_update, timer_seconds').eq('id', DASHBOARD_ROW_ID).single(),
+        ])
+        if (cancelled) return
+        isRemoteUpdateRef.current = true
+        if (teamsRes.data && Array.isArray(teamsRes.data) && teamsRes.data.length > 0) {
+          const nextScores = { ...defaultScores }
+          const nextMedals = { ...defaultMedals }
+          let lastUpdate = null
+          teamsRes.data.forEach((row) => {
+            if (TEAMS.includes(row.team)) {
+              nextScores[row.team] = Number(row.score) || 0
+              nextMedals[row.team] = Number(row.medals) || 0
+              if (row.updated_at) {
+                const d = new Date(row.updated_at)
+                if (!lastUpdate || d > lastUpdate) lastUpdate = d
+              }
+            }
+          })
+          setScoresState(nextScores)
+          setMedalsState(nextMedals)
+          if (lastUpdate) setLastUpdateState(lastUpdate)
+        }
+        if (dashboardRes?.data) {
+          const d = dashboardRes.data
+          if (d.scores && typeof d.scores === 'object') setScoresState(prev => ({ ...defaultScores, ...prev, ...d.scores }))
+          if (d.medals && typeof d.medals === 'object') setMedalsState(prev => ({ ...defaultMedals, ...prev, ...d.medals }))
+          if (d.last_update) setLastUpdateState(new Date(d.last_update))
+          if (typeof d.timer_seconds === 'number') setTimerSecondsState(d.timer_seconds)
+        }
+      } catch (_) {}
+    }
+    const id = setInterval(poll, 2000)
+    poll()
+    return () => {
+      cancelled = true
+      clearInterval(id)
     }
   }, [])
 
