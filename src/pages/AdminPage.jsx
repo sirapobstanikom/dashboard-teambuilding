@@ -6,6 +6,8 @@ import './AdminPage.css'
 
 export default function AdminPage() {
   const {
+    dashboardTitle,
+    setDashboardTitle,
     teamIds,
     teamNames,
     teamColors,
@@ -20,9 +22,16 @@ export default function AdminPage() {
   } = useScore()
   const [formScores, setFormScores] = useState({})
   const [formNames, setFormNames] = useState({})
+  const [formTitle, setFormTitle] = useState('')
   const [saved, setSaved] = useState(false)
   const [addAmounts, setAddAmounts] = useState({})
   const hasUserEditedRef = useRef(false)
+
+  // เปิดให้ body เลื่อนได้บนมือถือ (เลื่อนหน้า Admin ได้)
+  useEffect(() => {
+    document.body.classList.add('route-admin')
+    return () => document.body.classList.remove('route-admin')
+  }, [])
 
   useEffect(() => {
     if (!hasUserEditedRef.current) {
@@ -30,6 +39,10 @@ export default function AdminPage() {
       setFormNames(prev => ({ ...teamNames, ...prev }))
     }
   }, [scores, teamNames, teamIds])
+
+  useEffect(() => {
+    setFormTitle(dashboardTitle || '')
+  }, [dashboardTitle])
 
   const handleScoreChange = (team, value) => {
     hasUserEditedRef.current = true
@@ -68,8 +81,16 @@ export default function AdminPage() {
     setAddAmounts(prev => ({ ...prev, [team]: '' }))
   }
 
+  const handleTitleBlur = () => {
+    const t = (formTitle || '').trim() || 'ORIENTATION SPORT DAY'
+    setDashboardTitle(t)
+    setFormTitle(t)
+  }
+
   const handleSave = async (e) => {
     e.preventDefault()
+    const titleToSet = (formTitle || '').trim() || 'ORIENTATION SPORT DAY'
+    setDashboardTitle(titleToSet)
     const scoresToSet = {}
     teamIds.forEach(t => {
       scoresToSet[t] = formScores[t] === '' ? 0 : Number(formScores[t])
@@ -82,7 +103,7 @@ export default function AdminPage() {
     const now = new Date()
     setAllScores(scoresToSet)
     setLastUpdate(now)
-    await flushToDatabase({ teamIds, teamNames: { ...teamNames, ...namesToSet }, teamColors, scores: scoresToSet, lastUpdate: now })
+    await flushToDatabase({ dashboardTitle: titleToSet, teamIds, teamNames: { ...teamNames, ...namesToSet }, teamColors, scores: scoresToSet, lastUpdate: now })
     hasUserEditedRef.current = false
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
@@ -98,6 +119,18 @@ export default function AdminPage() {
       </header>
 
       <form className="admin-form" onSubmit={handleSave}>
+        <section className="admin-section admin-section-title">
+          <h2>หัวเรื่อง Dashboard</h2>
+          <input
+            type="text"
+            className="admin-input admin-input-title"
+            value={formTitle}
+            onChange={e => setFormTitle(e.target.value)}
+            onBlur={handleTitleBlur}
+            placeholder="เช่น ORIENTATION SPORT DAY"
+            aria-label="หัวเรื่อง"
+          />
+        </section>
         <section className="admin-section">
           <h2>คะแนนแต่ละทีม ({teamIds.length}/{MAX_TEAMS})</h2>
           <div className="admin-team-fields">

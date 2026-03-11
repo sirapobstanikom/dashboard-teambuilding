@@ -39,6 +39,11 @@ html, body {
   height: 100%;
 }
 
+/* หน้า Admin: ไม่พึ่ง body scroll — ใช้ .admin-page เลื่อนเอง */
+body.route-admin #root {
+  height: 100%;
+}
+
 .dashboard-wrapper {
   position: relative;
   width: 100vw;
@@ -756,6 +761,21 @@ html, body {
   color: #fff;
   background: rgba(0,0,0,0.5);
   border-color: rgba(255,255,255,0.35);
+}
+
+/* มือถือ: ปุ่ม Admin ไปมุมบนขวา + เพิ่ม padding ล่างไม่ให้บังการ์ดคะแนน */
+@media (max-width: 768px), (max-height: 500px) {
+  .dashboard-admin-link--subtle {
+    bottom: auto;
+    top: 8px;
+    right: 8px;
+  }
+  .dashboard .ranking-grid-wrapper {
+    padding-bottom: 48px;
+  }
+  main.dashboard {
+    padding-bottom: 56px;
+  }
 }
 
 @media (max-aspect-ratio: 16/9) {

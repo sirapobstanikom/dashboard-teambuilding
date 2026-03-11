@@ -5,9 +5,11 @@
 -- alter table public.dashboard_state add column if not exists team_ids jsonb not null default '["green","red","yellow","blue"]';
 -- alter table public.dashboard_state add column if not exists team_names jsonb not null default '{"green":"ทีมสีเขียว","red":"ทีมสีแดง","yellow":"ทีมสีเหลือง","blue":"ทีมสีน้ำเงิน"}';
 -- alter table public.dashboard_state add column if not exists team_colors jsonb default '{"green":"#00c853","red":"#c62828","yellow":"#ffc107","blue":"#1565c0"}';
+-- alter table public.dashboard_state add column if not exists dashboard_title text default 'ORIENTATION SPORT DAY';
 
 create table if not exists public.dashboard_state (
   id text primary key default 'default',
+  dashboard_title text default 'ORIENTATION SPORT DAY',
   team_ids jsonb not null default '["green","red","yellow","blue"]',
   team_names jsonb not null default '{"green":"ทีมสีเขียว","red":"ทีมสีแดง","yellow":"ทีมสีเหลือง","blue":"ทีมสีน้ำเงิน"}',
   team_colors jsonb default '{"green":"#00c853","red":"#c62828","yellow":"#ffc107","blue":"#1565c0"}',
@@ -19,8 +21,8 @@ create table if not exists public.dashboard_state (
 );
 
 -- ใส่แถวเริ่มต้น
-insert into public.dashboard_state (id, team_ids, team_names, team_colors, scores, medals, last_update, timer_seconds)
-values ('default', '["green","red","yellow","blue"]', '{"green":"ทีมสีเขียว","red":"ทีมสีแดง","yellow":"ทีมสีเหลือง","blue":"ทีมสีน้ำเงิน"}', '{"green":"#00c853","red":"#c62828","yellow":"#ffc107","blue":"#1565c0"}', '{"green":0,"red":0,"yellow":0,"blue":0}', '{"green":0,"red":0,"yellow":0,"blue":0}', null, 300)
+insert into public.dashboard_state (id, dashboard_title, team_ids, team_names, team_colors, scores, medals, last_update, timer_seconds)
+values ('default', 'ORIENTATION SPORT DAY', '["green","red","yellow","blue"]', '{"green":"ทีมสีเขียว","red":"ทีมสีแดง","yellow":"ทีมสีเหลือง","blue":"ทีมสีน้ำเงิน"}', '{"green":"#00c853","red":"#c62828","yellow":"#ffc107","blue":"#1565c0"}', '{"green":0,"red":0,"yellow":0,"blue":0}', '{"green":0,"red":0,"yellow":0,"blue":0}', null, 300)
 on conflict (id) do nothing;
 
 -- เปิดให้อ่าน/เขียนได้ (สำหรับ anon key) — ต้องการความปลอดภัยเพิ่มให้ใช้ RLS และ policy
