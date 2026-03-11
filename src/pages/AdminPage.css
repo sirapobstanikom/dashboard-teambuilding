@@ -76,6 +76,28 @@
   font-size: 1rem;
 }
 
+.admin-add-custom {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.admin-input-add {
+  max-width: 72px;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.95rem;
+}
+
+.admin-add-custom-btn {
+  white-space: nowrap;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.9rem;
+}
+
+.admin-input-score {
+  max-width: 100px;
+}
+
 .admin-add-btns {
   display: flex;
   gap: 0.5rem;

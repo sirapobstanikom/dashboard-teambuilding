@@ -35,6 +35,17 @@ export default function AdminPage() {
     setLastUpdate(new Date())
   }
 
+  // ค่าที่พิมพ์ในช่อง "บวก" แต่ละทีม (ทีม -> ตัวเลขที่พิมพ์)
+  const [addAmounts, setAddAmounts] = useState({ green: '', red: '', yellow: '', blue: '' })
+
+  const handleAddCustom = (team) => {
+    const raw = addAmounts[team]
+    const amount = Math.max(0, parseInt(String(raw).replace(/\D/g, ''), 10) || 0)
+    if (amount === 0) return
+    handleAdd(team, amount)
+    setAddAmounts(prev => ({ ...prev, [team]: '' }))
+  }
+
   const handleSave = async (e) => {
     e.preventDefault()
     const scoresToSet = {}
@@ -71,8 +82,24 @@ export default function AdminPage() {
                   min={0}
                   value={formScores[team]}
                   onChange={e => handleScoreChange(team, e.target.value)}
-                  className="admin-input"
+                  className="admin-input admin-input-score"
+                  aria-label={`คะแนน ${TEAM_LABELS[team]}`}
                 />
+                <div className="admin-add-custom">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="จำนวน"
+                    value={addAmounts[team]}
+                    onChange={e => setAddAmounts(prev => ({ ...prev, [team]: e.target.value }))}
+                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddCustom(team))}
+                    className="admin-input admin-input-add"
+                    aria-label={`บวกคะแนน ${TEAM_LABELS[team]}`}
+                  />
+                  <button type="button" className="admin-add-btn admin-add-custom-btn" onClick={() => handleAddCustom(team)} title="บวกคะแนน">
+                    + บวก
+                  </button>
+                </div>
                 <div className="admin-add-btns">
                   <button type="button" className="admin-add-btn" onClick={() => handleAdd(team, 10)}>+10</button>
                   <button type="button" className="admin-add-btn" onClick={() => handleAdd(team, 100)}>+100</button>
