@@ -9,6 +9,12 @@ export const DEFAULT_TEAM_NAMES = {
   yellow: 'ทีมสีเหลือง',
   blue: 'ทีมสีน้ำเงิน',
 }
+export const DEFAULT_TEAM_COLORS = {
+  green: '#00c853',
+  red: '#c62828',
+  yellow: '#ffc107',
+  blue: '#1565c0',
+}
 
 export const TEAM_LABELS = {
   green: 'ทีมสีเขียว',

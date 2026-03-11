@@ -8,10 +8,12 @@ export default function AdminPage() {
   const {
     teamIds,
     teamNames,
+    teamColors,
     scores,
     setAllScores,
     setLastUpdate,
     setTeamName,
+    setTeamColor,
     addTeam,
     removeTeam,
     flushToDatabase,
@@ -80,13 +82,13 @@ export default function AdminPage() {
     const now = new Date()
     setAllScores(scoresToSet)
     setLastUpdate(now)
-    await flushToDatabase({ teamIds, teamNames: { ...teamNames, ...namesToSet }, scores: scoresToSet, lastUpdate: now })
+    await flushToDatabase({ teamIds, teamNames: { ...teamNames, ...namesToSet }, teamColors, scores: scoresToSet, lastUpdate: now })
     hasUserEditedRef.current = false
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
 
-  const getTeamColor = (index) => TEAM_COLOR_PALETTE[index % TEAM_COLOR_PALETTE.length]
+  const getTeamColor = (teamId) => teamColors[teamId] || TEAM_COLOR_PALETTE[teamIds.indexOf(teamId) % TEAM_COLOR_PALETTE.length]
 
   return (
     <div className="admin-page">
@@ -99,8 +101,16 @@ export default function AdminPage() {
         <section className="admin-section">
           <h2>คะแนนแต่ละทีม ({teamIds.length}/{MAX_TEAMS})</h2>
           <div className="admin-team-fields">
-            {teamIds.map((teamId, index) => (
-              <div key={teamId} className="admin-team-row" style={{ '--team-color': getTeamColor(index) }}>
+            {teamIds.map((teamId) => (
+              <div key={teamId} className="admin-team-row" style={{ '--team-color': getTeamColor(teamId) }}>
+                <input
+                  type="color"
+                  className="admin-color-picker"
+                  value={getTeamColor(teamId)}
+                  onChange={e => setTeamColor(teamId, e.target.value)}
+                  title="สีทีม"
+                  aria-label="สีทีม"
+                />
                 <input
                   type="text"
                   className="admin-input admin-input-name"

@@ -235,9 +235,14 @@ html, body {
 .scoreboard-strip-inner {
   display: flex;
   justify-content: center;
-  gap: 1.2vw;
+  gap: 0.6vw;
   width: 100%;
   flex-wrap: wrap;
+}
+
+.dashboard--many-teams .scoreboard-strip-inner {
+  max-height: 14vh;
+  overflow-y: auto;
 }
 
 .scoreboard-item {
@@ -310,55 +315,183 @@ html, body {
 }
 
 /* ===== Ranking Grid (order by rank) ===== */
+.ranking-grid-wrapper {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 98vw;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.5rem 0 1rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ranking-grid-wrapper--many {
+  max-height: 65vh;
+}
+
+.ranking-grid-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+.ranking-grid-wrapper::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.2);
+  border-radius: 4px;
+}
+.ranking-grid-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.25);
+  border-radius: 4px;
+}
+.ranking-grid-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.35);
+}
+
 .ranking-grid,
 .teams-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1.5vw;
-  flex: 1;
+  grid-auto-rows: minmax(172px, 1fr);
+  gap: clamp(1rem, 1.8vw, 1.75rem);
   width: 100%;
   max-width: 96vw;
-  min-height: 0;
+  margin: 0 auto;
   align-items: stretch;
 }
 
+/* 5 ทีม: 3 คอลัมน์ (แถว 3+2, การ์ดที่ 5 อยู่กลาง) */
+.ranking-grid--5 {
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: minmax(178px, 1fr);
+  gap: clamp(1rem, 2vw, 1.75rem);
+}
+.ranking-grid--5 .team-card:nth-child(5) {
+  grid-column: 2;
+}
+
+/* 6 ทีม: 3 คอลัมน์ (2 แถว 3-3) */
+.ranking-grid--6 {
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: minmax(176px, 1fr);
+  gap: clamp(1rem, 2vw, 1.75rem);
+}
+
+/* 7 ทีม: 4 คอลัมน์ (แถว 4+3) */
+.ranking-grid--7 {
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: minmax(172px, 1fr);
+  gap: clamp(0.9rem, 1.6vw, 1.5rem);
+}
+
+/* 8 ทีม: 4 คอลัมน์ (2 แถว 4-4) */
+.ranking-grid--8 {
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: minmax(170px, 1fr);
+  gap: clamp(0.9rem, 1.6vw, 1.5rem);
+}
+
+/* 9+ ทีม: คอลัมน์ยืดหยุ่น */
+.ranking-grid--many {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-auto-rows: minmax(175px, auto);
+  gap: clamp(0.75rem, 1.2vw, 1.25rem);
+}
+
+/* การ์ดทีม — ดีไซน์รวมทุกจำนวนทีม */
 .team-card {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: 2vh 1.2vw 1.8vh;
+  min-height: 165px;
+  padding: clamp(0.85rem, 2vh, 1.5rem) clamp(0.6rem, 1.2vw, 1.1rem);
   border-radius: 16px;
   border: 2px solid;
   overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.35s ease;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06);
 }
 
-.team-card--ranking.rank-1 { border-color: rgba(255,215,0,0.6); box-shadow: 0 0 24px rgba(255,215,0,0.2), inset 0 1px 0 rgba(255,255,255,0.08); }
-.team-card--ranking.rank-2 { border-color: rgba(192,192,192,0.5); box-shadow: 0 0 20px rgba(255,255,255,0.12), inset 0 1px 0 rgba(255,255,255,0.06); }
-.team-card--ranking.rank-3 { border-color: rgba(205,127,50,0.5); box-shadow: 0 0 20px rgba(205,127,50,0.15), inset 0 1px 0 rgba(255,255,255,0.06); }
-.team-card--ranking.rank-4 { border-color: rgba(255,255,255,0.2); }
+.team-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.ranking-grid--5 .team-card,
+.ranking-grid--6 .team-card {
+  border-radius: 18px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.07);
+}
+
+.ranking-grid--7 .team-card,
+.ranking-grid--8 .team-card {
+  border-radius: 16px;
+}
+
+.ranking-grid--many .team-card {
+  min-height: 172px;
+  padding: 0.7rem 0.6rem 0.8rem;
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.team-card--ranking.rank-1 {
+  border-color: rgba(255,215,0,0.65);
+  box-shadow: 0 0 28px rgba(255,215,0,0.22), 0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.12);
+}
+.team-card--ranking.rank-2 {
+  border-color: rgba(192,192,192,0.55);
+  box-shadow: 0 0 22px rgba(255,255,255,0.1), 0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.team-card--ranking.rank-3 {
+  border-color: rgba(205,127,50,0.55);
+  box-shadow: 0 0 22px rgba(205,127,50,0.18), 0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.team-card--ranking.rank-4,
+.team-card--ranking[data-rank="4"] {
+  border-color: rgba(255,255,255,0.22);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+/* อันดับ 5 ขึ้นไป — โทนเดียวกันทุกการ์ด */
+.team-card--ranking:not(.rank-1):not(.rank-2):not(.rank-3):not(.rank-4) {
+  border-color: rgba(255,255,255,0.18);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.05);
+}
 
 .team-card::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 50%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.09) 0%, transparent 45%);
   pointer-events: none;
-  border-radius: 14px;
+  border-radius: inherit;
 }
 
-.team-card[data-team="green"]  { border-color: var(--green); background: linear-gradient(180deg, rgba(0,200,83,0.25) 0%, rgba(0,0,0,0.4) 100%); }
-.team-card[data-team="red"]    { border-color: var(--red);   background: linear-gradient(180deg, rgba(198,40,40,0.25) 0%, rgba(0,0,0,0.4) 100%); }
-.team-card[data-team="yellow"] { border-color: var(--yellow); background: linear-gradient(180deg, rgba(255,193,7,0.2) 0%, rgba(0,0,0,0.4) 100%); }
-.team-card[data-team="blue"]   { border-color: var(--blue);  background: linear-gradient(180deg, rgba(21,101,192,0.25) 0%, rgba(0,0,0,0.4) 100%); }
+.team-card[data-team="green"]  { border-color: var(--green); background: linear-gradient(180deg, rgba(0,200,83,0.28) 0%, rgba(0,0,0,0.45) 100%); }
+.team-card[data-team="red"]    { border-color: var(--red);   background: linear-gradient(180deg, rgba(198,40,40,0.28) 0%, rgba(0,0,0,0.45) 100%); }
+.team-card[data-team="yellow"] { border-color: var(--yellow); background: linear-gradient(180deg, rgba(255,193,7,0.22) 0%, rgba(0,0,0,0.45) 100%); }
+.team-card[data-team="blue"]   { border-color: var(--blue);  background: linear-gradient(180deg, rgba(21,101,192,0.28) 0%, rgba(0,0,0,0.45) 100%); }
 
-/* ทีมแบบกำหนดเอง (มากกว่า 4 ทีม) ใช้ --team-color จาก inline style */
-.team-card--custom { border-color: var(--team-color); background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.4) 100%); }
-.team-card--custom .card-glow { background: var(--team-color); }
-.team-card--custom .team-score { color: var(--team-color); text-shadow: 0 0 20px var(--team-color), 0 0 40px var(--team-color); }
-.team-card--custom .progress-bar { background: var(--team-color); }
+/* ทีมแบบกำหนดเอง (5+ ทีม) — ใช้ --team-color ให้การ์ดสวยเท่ากัน */
+.team-card--custom {
+  border-color: var(--team-color);
+  background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(0,0,0,0.5) 100%);
+}
+.team-card--custom::before {
+  background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+}
+.team-card--custom .card-glow {
+  background: var(--team-color);
+  opacity: 0.3;
+}
+.team-card--custom .team-score {
+  color: var(--team-color);
+  text-shadow: 0 0 20px var(--team-color), 0 0 40px var(--team-color);
+}
+.team-card--custom .progress-bar {
+  background: var(--team-color);
+  box-shadow: 0 0 12px var(--team-color);
+}
 
 .team-card--ranking.rank-1[data-team="green"],
 .team-card--ranking.rank-1[data-team="red"],
@@ -407,16 +540,21 @@ html, body {
 
 .card-rank-ordinal {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: clamp(1rem, 1.5vw, 1.35rem);
+  font-size: clamp(0.75rem, 1.5vw, 1.35rem);
   font-weight: 700;
   letter-spacing: 0.05em;
   line-height: 1;
 }
 
+.ranking-grid--many .card-rank-ordinal {
+  font-size: clamp(0.65rem, 1.2vw, 1rem);
+}
+
 .team-card--ranking.rank-1 .card-rank-ordinal { color: #ffd700; text-shadow: 0 0 12px rgba(255,215,0,0.5); }
 .team-card--ranking.rank-2 .card-rank-ordinal { color: #e0e0e0; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
 .team-card--ranking.rank-3 .card-rank-ordinal { color: #cd7f32; text-shadow: 0 0 10px rgba(205,127,50,0.4); }
-.team-card--ranking.rank-4 .card-rank-ordinal { color: rgba(255,255,255,0.7); }
+.team-card--ranking.rank-4 .card-rank-ordinal { color: rgba(255,255,255,0.75); text-shadow: 0 0 8px rgba(255,255,255,0.15); }
+.team-card--ranking:not(.rank-1):not(.rank-2):not(.rank-3):not(.rank-4) .card-rank-ordinal { color: rgba(255,255,255,0.65); font-size: clamp(0.7rem, 1.2vw, 1rem); }
 
 .card-rank {
   position: absolute;
@@ -436,37 +574,54 @@ html, body {
 }
 
 .team-icon {
-  font-size: clamp(2rem, 3vw, 2.8rem);
-  margin-bottom: 0.5vh;
+  font-size: clamp(1.25rem, 3vw, 2.8rem);
+  margin-bottom: 0.3vh;
   opacity: 0.95;
+  flex-shrink: 0;
+}
+
+.ranking-grid--many .team-icon {
+  font-size: clamp(1rem, 2vw, 1.5rem);
+  margin-bottom: 0.2rem;
 }
 
 .team-name {
-  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  font-size: clamp(0.75rem, 1.4vw, 1.2rem);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 0.8vh;
+  margin-bottom: 0.4vh;
   text-align: center;
   line-height: 1.2;
+  flex-shrink: 0;
+}
+
+.ranking-grid--many .team-name {
+  font-size: clamp(0.7rem, 1.1vw, 0.95rem);
+  margin-bottom: 0.25rem;
 }
 
 .team-score-wrap {
-  margin-bottom: 1vh;
+  margin-bottom: 0.5vh;
   display: flex;
   align-items: baseline;
   gap: 0.3vw;
   flex-wrap: wrap;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .team-score {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: clamp(3rem, 6vw, 5rem);
+  font-size: clamp(1.75rem, 6vw, 5rem);
   font-weight: 400;
   line-height: 1;
   display: inline-block;
   transition: transform 0.2s ease;
+}
+
+.ranking-grid--many .team-score {
+  font-size: clamp(1.75rem, 4vw, 3rem);
 }
 
 .team-score-label {
@@ -494,15 +649,24 @@ html, body {
 
 .progress-wrap {
   width: 100%;
-  height: 12px;
+  min-height: 10px;
+  height: clamp(10px, 1.8vh, 14px);
   background: rgba(0,0,0,0.4);
   border-radius: 6px;
   overflow: hidden;
-  margin-bottom: 0.8vh;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.ranking-grid--many .progress-wrap {
+  min-height: 8px;
+  height: 10px;
+  margin-top: 0.35rem;
 }
 
 .progress-bar {
   height: 100%;
+  min-height: inherit;
   border-radius: 6px;
   transition: width 0.6s ease;
 }

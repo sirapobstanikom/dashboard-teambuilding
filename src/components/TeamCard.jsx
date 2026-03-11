@@ -2,17 +2,17 @@ import { TEAM_COLOR_PALETTE, TEAMS } from '../constants'
 
 const RANK_LABEL = ['', '1st', '2nd', '3rd', '4th']
 
-export default function TeamCard({ team, teamName, score, rank, progressPct, colorIndex = 0 }) {
+export default function TeamCard({ team, teamName, score, rank, progressPct, colorIndex = 0, teamColor }) {
   const rankLabel = RANK_LABEL[rank] || `${rank}th`
-  const rankClass = rank <= 3 ? `rank-${rank}` : ''
-  const color = TEAM_COLOR_PALETTE[colorIndex % TEAM_COLOR_PALETTE.length]
-  const isCustomTeam = !TEAMS.includes(team)
+  const rankClass = rank <= 4 ? `rank-${rank}` : ''
+  const color = teamColor || TEAM_COLOR_PALETTE[colorIndex % TEAM_COLOR_PALETTE.length]
+  const useCustomColor = !!teamColor || !TEAMS.includes(team)
   return (
     <article
-      className={`team-card team-card--ranking ${rankClass} ${isCustomTeam ? 'team-card--custom' : ''}`}
+      className={`team-card team-card--ranking ${rankClass} ${useCustomColor ? 'team-card--custom' : ''}`}
       data-team={team}
       data-rank={rank}
-      style={isCustomTeam ? { '--team-color': color } : undefined}
+      style={useCustomColor ? { '--team-color': color } : undefined}
     >
       <div className="card-glow" />
       <div className="card-rank-wrap">

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-import { DEFAULT_TEAM_IDS, DEFAULT_TEAM_NAMES } from '../constants'
+import { DEFAULT_TEAM_IDS, DEFAULT_TEAM_NAMES, DEFAULT_TEAM_COLORS, TEAM_COLOR_PALETTE } from '../constants'
 import { supabase, isSupabaseEnabled } from '../lib/supabase'
 
 const STORAGE_KEY = 'olympic-dashboard-scores'
@@ -9,6 +9,7 @@ const DASHBOARD_ROW_ID = 'default'
 const defaultState = {
   teamIds: [...DEFAULT_TEAM_IDS],
   teamNames: { ...DEFAULT_TEAM_NAMES },
+  teamColors: { ...DEFAULT_TEAM_COLORS },
   scores: Object.fromEntries(DEFAULT_TEAM_IDS.map(id => [id, 0])),
   medals: Object.fromEntries(DEFAULT_TEAM_IDS.map(id => [id, 0])),
   lastUpdate: null,
@@ -22,11 +23,13 @@ function loadStateFromStorage() {
       const data = JSON.parse(raw)
       const teamIds = Array.isArray(data.teamIds) && data.teamIds.length > 0 ? data.teamIds : defaultState.teamIds
       const teamNames = data.teamNames && typeof data.teamNames === 'object' ? { ...defaultState.teamNames, ...data.teamNames } : { ...defaultState.teamNames }
+      const teamColors = data.teamColors && typeof data.teamColors === 'object' ? { ...defaultState.teamColors, ...data.teamColors } : { ...defaultState.teamColors }
       const scores = { ...Object.fromEntries(teamIds.map(id => [id, 0])), ...data.scores }
       const medals = { ...Object.fromEntries(teamIds.map(id => [id, 0])), ...data.medals }
       return {
         teamIds,
         teamNames,
+        teamColors,
         scores,
         medals,
         lastUpdate: data.lastUpdate ? new Date(data.lastUpdate) : null,
@@ -37,11 +40,12 @@ function loadStateFromStorage() {
   return { ...defaultState }
 }
 
-function saveStateToStorage(teamIds, teamNames, scores, medals, lastUpdate, timerSeconds) {
+function saveStateToStorage(teamIds, teamNames, teamColors, scores, medals, lastUpdate, timerSeconds) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       teamIds,
       teamNames,
+      teamColors,
       scores,
       medals,
       lastUpdate: lastUpdate ? lastUpdate.toISOString() : null,
@@ -59,6 +63,7 @@ export function ScoreProvider({ children }) {
   const location = useLocation()
   const [teamIds, setTeamIdsState] = useState(() => initialState.teamIds)
   const [teamNames, setTeamNamesState] = useState(() => initialState.teamNames)
+  const [teamColors, setTeamColorsState] = useState(() => initialState.teamColors ?? defaultState.teamColors)
   const [scores, setScoresState] = useState(() => initialState.scores)
   const [medals, setMedalsState] = useState(() => initialState.medals)
   const [lastUpdate, setLastUpdateState] = useState(() => initialState.lastUpdate)
@@ -89,7 +94,7 @@ export function ScoreProvider({ children }) {
       try {
         const { data: dashboardData } = await supabase
           .from('dashboard_state')
-          .select('team_ids, team_names, scores, medals, last_update, timer_seconds')
+          .select('team_ids, team_names, team_colors, scores, medals, last_update, timer_seconds')
           .eq('id', DASHBOARD_ROW_ID)
           .single()
         if (cancelled) return
@@ -100,8 +105,12 @@ export function ScoreProvider({ children }) {
         const names = dashboardData?.team_names && typeof dashboardData.team_names === 'object'
           ? { ...defaultState.teamNames, ...dashboardData.team_names }
           : defaultState.teamNames
+        const colors = dashboardData?.team_colors && typeof dashboardData.team_colors === 'object'
+          ? { ...defaultState.teamColors, ...dashboardData.team_colors }
+          : defaultState.teamColors
         setTeamIdsState(ids)
         setTeamNamesState(prev => ({ ...defaultState.teamNames, ...prev, ...names }))
+        setTeamColorsState(prev => ({ ...defaultState.teamColors, ...prev, ...colors }))
         if (dashboardData?.last_update) setLastUpdateState(new Date(dashboardData.last_update))
         if (typeof dashboardData?.timer_seconds === 'number') setTimerSecondsState(dashboardData.timer_seconds)
         const { data: teamsData } = await supabase
@@ -145,7 +154,7 @@ export function ScoreProvider({ children }) {
   // Persist: ถ้าใช้ Supabase ให้เก็บเฉพาะใน database (เรียลไทม์), ถ้าไม่ใช้ให้เก็บใน localStorage
   useEffect(() => {
     if (!isSupabaseEnabled()) {
-      saveStateToStorage(teamIds, teamNames, scores, medals, lastUpdate, timerSeconds)
+      saveStateToStorage(teamIds, teamNames, teamColors, scores, medals, lastUpdate, timerSeconds)
     }
 
     if (!isSupabaseEnabled() || !supabase || isRemoteUpdateRef.current || !hasFetchedRef.current) {
@@ -170,6 +179,7 @@ export function ScoreProvider({ children }) {
             id: DASHBOARD_ROW_ID,
             team_ids: teamIds,
             team_names: teamNames,
+            team_colors: teamColors,
             scores,
             medals,
             last_update: lastUpdate ? lastUpdate.toISOString() : null,
@@ -186,7 +196,7 @@ export function ScoreProvider({ children }) {
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
     }
-  }, [teamIds, teamNames, scores, medals, lastUpdate, timerSeconds])
+  }, [teamIds, teamNames, teamColors, scores, medals, lastUpdate, timerSeconds])
 
   // Realtime: อัปเดตหน้าบ้านทันทีเมื่อมีค่าเข้า database (ใช้ payload โดยตรง)
   useEffect(() => {
@@ -210,6 +220,7 @@ export function ScoreProvider({ children }) {
         isRemoteUpdateRef.current = true
         if (Array.isArray(row.team_ids) && row.team_ids.length > 0) setTeamIdsState(row.team_ids)
         if (row.team_names && typeof row.team_names === 'object') setTeamNamesState(prev => ({ ...prev, ...row.team_names }))
+        if (row.team_colors && typeof row.team_colors === 'object') setTeamColorsState(prev => ({ ...defaultState.teamColors, ...prev, ...row.team_colors }))
         if (row.scores && typeof row.scores === 'object') setScoresState(prev => ({ ...prev, ...row.scores }))
         if (row.medals && typeof row.medals === 'object') setMedalsState(prev => ({ ...prev, ...row.medals }))
         if (row.last_update) setLastUpdateState(new Date(row.last_update))
@@ -230,7 +241,7 @@ export function ScoreProvider({ children }) {
       try {
         const { data: dashboardData } = await supabase
           .from('dashboard_state')
-          .select('team_ids, team_names, scores, medals, last_update, timer_seconds')
+          .select('team_ids, team_names, team_colors, scores, medals, last_update, timer_seconds')
           .eq('id', DASHBOARD_ROW_ID)
           .single()
         if (cancelled) return
@@ -243,6 +254,7 @@ export function ScoreProvider({ children }) {
         isRemoteUpdateRef.current = true
         if (Array.isArray(dashboardData?.team_ids) && dashboardData.team_ids.length > 0) setTeamIdsState(dashboardData.team_ids)
         if (dashboardData?.team_names && typeof dashboardData.team_names === 'object') setTeamNamesState(prev => ({ ...prev, ...dashboardData.team_names }))
+        if (dashboardData?.team_colors && typeof dashboardData.team_colors === 'object') setTeamColorsState(prev => ({ ...defaultState.teamColors, ...prev, ...dashboardData.team_colors }))
         if (teamsData && teamsData.length > 0) {
           const nextScores = Object.fromEntries(ids.map(id => [id, 0]))
           const nextMedals = Object.fromEntries(ids.map(id => [id, 0]))
@@ -284,6 +296,7 @@ export function ScoreProvider({ children }) {
         const data = JSON.parse(e.newValue)
         if (Array.isArray(data.teamIds)) setTeamIdsState(data.teamIds)
         if (data.teamNames && typeof data.teamNames === 'object') setTeamNamesState(data.teamNames)
+        if (data.teamColors && typeof data.teamColors === 'object') setTeamColorsState(data.teamColors)
         if (data.scores) setScoresState(data.scores)
         if (data.medals) setMedalsState(data.medals)
         if (data.lastUpdate) setLastUpdateState(new Date(data.lastUpdate))
@@ -326,11 +339,18 @@ export function ScoreProvider({ children }) {
     setTeamNamesState(prev => ({ ...prev, [teamId]: String(name).trim() || prev[teamId] || teamId }))
   }, [])
 
+  const setTeamColor = useCallback((teamId, hex) => {
+    const color = /^#[0-9A-Fa-f]{6}$/.test(hex) ? hex : (teamColors[teamId] || TEAM_COLOR_PALETTE[0])
+    setTeamColorsState(prev => ({ ...prev, [teamId]: color }))
+  }, [teamColors])
+
   const addTeam = useCallback(() => {
     if (teamIds.length >= 30) return
     const newId = 'team_' + Date.now()
+    const newColor = TEAM_COLOR_PALETTE[teamIds.length % TEAM_COLOR_PALETTE.length]
     setTeamIdsState(prev => [...prev, newId])
     setTeamNamesState(prev => ({ ...prev, [newId]: `ทีม ${teamIds.length + 1}` }))
+    setTeamColorsState(prev => ({ ...prev, [newId]: newColor }))
     setScoresState(prev => ({ ...prev, [newId]: 0 }))
     setMedalsState(prev => ({ ...prev, [newId]: 0 }))
     setLastUpdateState(new Date())
@@ -340,6 +360,11 @@ export function ScoreProvider({ children }) {
     if (teamIds.length <= 1) return
     setTeamIdsState(prev => prev.filter(id => id !== teamId))
     setTeamNamesState(prev => {
+      const next = { ...prev }
+      delete next[teamId]
+      return next
+    })
+    setTeamColorsState(prev => {
       const next = { ...prev }
       delete next[teamId]
       return next
@@ -367,6 +392,7 @@ export function ScoreProvider({ children }) {
     if (!isSupabaseEnabled() || !supabase) return
     const ids = payload?.teamIds ?? teamIds
     const names = payload?.teamNames ?? teamNames
+    const colors = payload?.teamColors ?? teamColors
     const s = payload?.scores ?? scores
     const m = payload?.medals ?? medals
     const lu = payload?.lastUpdate !== undefined ? payload.lastUpdate : lastUpdate
@@ -385,6 +411,7 @@ export function ScoreProvider({ children }) {
           id: DASHBOARD_ROW_ID,
           team_ids: ids,
           team_names: names,
+          team_colors: colors,
           scores: s,
           medals: m,
           last_update: lu ? (lu instanceof Date ? lu.toISOString() : new Date(lu).toISOString()) : null,
@@ -397,11 +424,12 @@ export function ScoreProvider({ children }) {
     } catch (err) {
       console.error('[Supabase] flush failed:', err)
     }
-  }, [teamIds, teamNames, scores, medals, lastUpdate, timerSeconds])
+  }, [teamIds, teamNames, teamColors, scores, medals, lastUpdate, timerSeconds])
 
   const value = {
     teamIds,
     teamNames,
+    teamColors,
     scores,
     medals,
     lastUpdate,
@@ -414,6 +442,7 @@ export function ScoreProvider({ children }) {
     setAllScores,
     setAllMedals,
     setTeamName,
+    setTeamColor,
     addTeam,
     removeTeam,
     flushToDatabase,

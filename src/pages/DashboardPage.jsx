@@ -16,7 +16,7 @@ function getRankedTeams(teamIds, scores) {
 }
 
 export default function DashboardPage() {
-  const { teamIds, teamNames, scores, lastUpdate } = useScore()
+  const { teamIds, teamNames, teamColors, scores, lastUpdate } = useScore()
   const confettiRef = useRef(null)
 
   useEffect(() => {
@@ -28,6 +28,8 @@ export default function DashboardPage() {
   const rankedTeams = getRankedTeams(teamIds, scores)
   const rankByTeam = rankedTeams.reduce((acc, team, i) => ({ ...acc, [team]: i + 1 }), {})
   const maxScore = Math.max(MAX_SCORE, ...rankedTeams.map(t => scores[t] || 0), 1)
+  const teamCount = rankedTeams.length
+  const gridMod = teamCount >= 9 ? 'many' : teamCount === 8 ? '8' : teamCount === 7 ? '7' : teamCount === 6 ? '6' : teamCount === 5 ? '5' : ''
 
   return (
     <div className="dashboard-wrapper">
@@ -37,10 +39,11 @@ export default function DashboardPage() {
 
       <Link to="/admin" className="dashboard-admin-link dashboard-admin-link--subtle" title="Admin" aria-label="Admin">Admin</Link>
 
-      <main className="dashboard">
+      <main className={`dashboard ${teamCount > 8 ? 'dashboard--many-teams' : ''}`}>
         <Header />
         <ScoreboardStrip rankedTeams={rankedTeams} scores={scores} rankByTeam={rankByTeam} teamNames={teamNames} />
-        <section className="ranking-grid">
+        <div className={`ranking-grid-wrapper ${teamCount > 8 ? 'ranking-grid-wrapper--many' : ''}`}>
+          <section className={`ranking-grid ${gridMod ? `ranking-grid--${gridMod}` : ''}`} data-team-count={teamCount}>
           {rankedTeams.map((team, index) => {
             const rank = index + 1
             return (
@@ -48,6 +51,7 @@ export default function DashboardPage() {
                 key={team}
                 team={team}
                 teamName={teamNames[team] || `ทีม ${team}`}
+                teamColor={teamColors[team]}
                 score={scores[team] || 0}
                 rank={rank}
                 progressPct={Math.min(100, ((scores[team] || 0) / maxScore) * 100)}
@@ -55,7 +59,8 @@ export default function DashboardPage() {
               />
             )
           })}
-        </section>
+          </section>
+        </div>
         <LiveTicker lastUpdate={lastUpdate} />
       </main>
 

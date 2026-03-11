@@ -1,9 +1,14 @@
 .admin-page {
   min-height: 100vh;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   background: linear-gradient(180deg, #0d1320 0%, #0a0e17 100%);
   color: #f5f5f5;
   font-family: 'Oswald', sans-serif;
   padding: 2rem;
+  box-sizing: border-box;
 }
 
 .admin-header {
@@ -64,12 +69,27 @@
 .admin-team-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   padding: 0.5rem 0;
   border-left: 4px solid var(--team-color, #555);
   padding-left: 0.75rem;
   flex-wrap: wrap;
 }
+
+.admin-color-picker {
+  width: 36px;
+  height: 36px;
+  padding: 2px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.admin-color-picker::-webkit-color-swatch-wrapper { padding: 0; }
+.admin-color-picker::-webkit-color-swatch { border: none; border-radius: 4px; }
+.admin-color-picker::-moz-color-swatch { border: none; border-radius: 4px; }
 
 .admin-input-name {
   flex: 1;
@@ -237,4 +257,141 @@
   font-size: 0.85rem;
   color: #6e6e6e;
   text-align: center;
+}
+
+/* ===== โทรศัพท์ / มือถือ ===== */
+@media (max-width: 768px) {
+  .admin-page {
+    padding: 1rem 1rem 2rem;
+    min-height: 100vh;
+    height: auto;
+  }
+
+  .admin-header {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 1.25rem;
+    gap: 0.75rem;
+  }
+
+  .admin-header h1 {
+    font-size: 1.35rem;
+    text-align: center;
+  }
+
+  .admin-link-dashboard {
+    text-align: center;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+
+  .admin-form {
+    max-width: 100%;
+  }
+
+  .admin-section h2 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .admin-team-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+    padding: 0.85rem;
+    border-left-width: 4px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+  }
+
+  .admin-team-row > * {
+    margin-left: 0;
+  }
+
+  .admin-color-picker {
+    width: 44px;
+    height: 44px;
+    align-self: flex-start;
+  }
+
+  .admin-input-name {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+    min-height: 48px;
+  }
+
+  .admin-input-score {
+    max-width: none;
+    width: 100%;
+    min-height: 48px;
+    font-size: 1.25rem;
+  }
+
+  .admin-add-custom {
+    width: 100%;
+  }
+
+  .admin-input-add {
+    max-width: none;
+    flex: 1;
+    min-height: 48px;
+    padding: 0.6rem;
+  }
+
+  .admin-add-custom-btn,
+  .admin-add-btn {
+    min-height: 48px;
+    padding: 0.65rem 0.85rem;
+    font-size: 1rem;
+  }
+
+  .admin-add-btns {
+    margin-left: 0;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .admin-remove-btn {
+    min-height: 48px;
+    padding: 0.6rem 0.85rem;
+  }
+
+  .admin-submit {
+    padding: 1rem 1.25rem;
+    font-size: 1.05rem;
+    min-height: 52px;
+  }
+
+  .admin-add-team-btn {
+    min-height: 48px;
+    padding: 0.75rem 1.25rem;
+    width: 100%;
+  }
+
+  .admin-add-team-wrap {
+    margin-top: 1rem;
+  }
+
+  .admin-hint {
+    margin-top: 1.5rem;
+    font-size: 0.8rem;
+    padding: 0 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-page {
+    padding: 0.75rem 0.75rem 1.5rem;
+  }
+
+  .admin-header h1 {
+    font-size: 1.2rem;
+  }
+
+  .admin-team-row {
+    padding: 0.7rem;
+  }
 }
