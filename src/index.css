@@ -354,6 +354,12 @@ html, body {
 .team-card[data-team="yellow"] { border-color: var(--yellow); background: linear-gradient(180deg, rgba(255,193,7,0.2) 0%, rgba(0,0,0,0.4) 100%); }
 .team-card[data-team="blue"]   { border-color: var(--blue);  background: linear-gradient(180deg, rgba(21,101,192,0.25) 0%, rgba(0,0,0,0.4) 100%); }
 
+/* ทีมแบบกำหนดเอง (มากกว่า 4 ทีม) ใช้ --team-color จาก inline style */
+.team-card--custom { border-color: var(--team-color); background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.4) 100%); }
+.team-card--custom .card-glow { background: var(--team-color); }
+.team-card--custom .team-score { color: var(--team-color); text-shadow: 0 0 20px var(--team-color), 0 0 40px var(--team-color); }
+.team-card--custom .progress-bar { background: var(--team-color); }
+
 .team-card--ranking.rank-1[data-team="green"],
 .team-card--ranking.rank-1[data-team="red"],
 .team-card--ranking.rank-1[data-team="yellow"],
@@ -366,6 +372,9 @@ html, body {
 .team-card--ranking.rank-3[data-team="red"],
 .team-card--ranking.rank-3[data-team="yellow"],
 .team-card--ranking.rank-3[data-team="blue"] { border-color: rgba(205,127,50,0.6); }
+.team-card--custom.rank-1 { border-color: rgba(255,215,0,0.7); }
+.team-card--custom.rank-2 { border-color: rgba(192,192,192,0.6); }
+.team-card--custom.rank-3 { border-color: rgba(205,127,50,0.6); }
 
 .card-glow {
   position: absolute;

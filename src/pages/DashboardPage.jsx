@@ -7,16 +7,16 @@ import Confetti from '../components/Confetti'
 import FallingColors from '../components/FallingColors'
 import LiveTicker from '../components/LiveTicker'
 import { useScore } from '../context/ScoreContext'
-import { TEAMS, MAX_SCORE } from '../constants'
+import { MAX_SCORE } from '../constants'
 
 const ADMIN_LINK_KEY = 'dashboard_show_admin'
 
-function getRankedTeams(scores) {
-  return [...TEAMS].sort((a, b) => scores[b] - scores[a])
+function getRankedTeams(teamIds, scores) {
+  return [...teamIds].sort((a, b) => (scores[b] || 0) - (scores[a] || 0))
 }
 
 export default function DashboardPage() {
-  const { scores, lastUpdate } = useScore()
+  const { teamIds, teamNames, scores, lastUpdate } = useScore()
   const confettiRef = useRef(null)
 
   useEffect(() => {
@@ -25,8 +25,9 @@ export default function DashboardPage() {
     } catch {}
   }, [])
 
-  const rankedTeams = getRankedTeams(scores)
+  const rankedTeams = getRankedTeams(teamIds, scores)
   const rankByTeam = rankedTeams.reduce((acc, team, i) => ({ ...acc, [team]: i + 1 }), {})
+  const maxScore = Math.max(MAX_SCORE, ...rankedTeams.map(t => scores[t] || 0), 1)
 
   return (
     <div className="dashboard-wrapper">
@@ -38,7 +39,7 @@ export default function DashboardPage() {
 
       <main className="dashboard">
         <Header />
-        <ScoreboardStrip rankedTeams={rankedTeams} scores={scores} rankByTeam={rankByTeam} />
+        <ScoreboardStrip rankedTeams={rankedTeams} scores={scores} rankByTeam={rankByTeam} teamNames={teamNames} />
         <section className="ranking-grid">
           {rankedTeams.map((team, index) => {
             const rank = index + 1
@@ -46,9 +47,11 @@ export default function DashboardPage() {
               <TeamCard
                 key={team}
                 team={team}
-                score={scores[team]}
+                teamName={teamNames[team] || `ทีม ${team}`}
+                score={scores[team] || 0}
                 rank={rank}
-                progressPct={Math.min(100, (scores[team] / MAX_SCORE) * 100)}
+                progressPct={Math.min(100, ((scores[team] || 0) / maxScore) * 100)}
+                colorIndex={index}
               />
             )
           })}

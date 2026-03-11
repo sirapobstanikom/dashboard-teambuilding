@@ -1,8 +1,14 @@
 -- รันใน Supabase SQL Editor เพื่อสร้างตารางเก็บสถานะ Dashboard
 -- Dashboard > SQL Editor > New query > วางแล้ว Run
 
+-- ถ้ามีตาราง dashboard_state อยู่แล้ว ให้รันคำสั่งนี้เพิ่มคอลัมน์ team_ids, team_names
+-- alter table public.dashboard_state add column if not exists team_ids jsonb not null default '["green","red","yellow","blue"]';
+-- alter table public.dashboard_state add column if not exists team_names jsonb not null default '{"green":"ทีมสีเขียว","red":"ทีมสีแดง","yellow":"ทีมสีเหลือง","blue":"ทีมสีน้ำเงิน"}';
+
 create table if not exists public.dashboard_state (
   id text primary key default 'default',
+  team_ids jsonb not null default '["green","red","yellow","blue"]',
+  team_names jsonb not null default '{"green":"ทีมสีเขียว","red":"ทีมสีแดง","yellow":"ทีมสีเหลือง","blue":"ทีมสีน้ำเงิน"}',
   scores jsonb not null default '{"green":0,"red":0,"yellow":0,"blue":0}',
   medals jsonb not null default '{"green":0,"red":0,"yellow":0,"blue":0}',
   last_update timestamptz,
@@ -11,8 +17,8 @@ create table if not exists public.dashboard_state (
 );
 
 -- ใส่แถวเริ่มต้น
-insert into public.dashboard_state (id, scores, medals, last_update, timer_seconds)
-values ('default', '{"green":0,"red":0,"yellow":0,"blue":0}', '{"green":0,"red":0,"yellow":0,"blue":0}', null, 300)
+insert into public.dashboard_state (id, team_ids, team_names, scores, medals, last_update, timer_seconds)
+values ('default', '["green","red","yellow","blue"]', '{"green":"ทีมสีเขียว","red":"ทีมสีแดง","yellow":"ทีมสีเหลือง","blue":"ทีมสีน้ำเงิน"}', '{"green":0,"red":0,"yellow":0,"blue":0}', '{"green":0,"red":0,"yellow":0,"blue":0}', null, 300)
 on conflict (id) do nothing;
 
 -- เปิดให้อ่าน/เขียนได้ (สำหรับ anon key) — ต้องการความปลอดภัยเพิ่มให้ใช้ RLS และ policy
@@ -60,3 +66,6 @@ create policy "Allow public update team_scores"
 
 create policy "Allow public insert team_scores"
   on public.team_scores for insert with check (true);
+
+create policy "Allow public delete team_scores"
+  on public.team_scores for delete using (true);

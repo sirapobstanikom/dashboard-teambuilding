@@ -1,26 +1,49 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useScore } from '../context/ScoreContext'
-import { TEAMS, TEAM_LABELS } from '../constants'
+import { MAX_TEAMS, TEAM_COLOR_PALETTE } from '../constants'
 import './AdminPage.css'
 
 export default function AdminPage() {
-  const { scores, setAllScores, setLastUpdate, flushToDatabase } = useScore()
-  const [formScores, setFormScores] = useState({ ...scores })
+  const {
+    teamIds,
+    teamNames,
+    scores,
+    setAllScores,
+    setLastUpdate,
+    setTeamName,
+    addTeam,
+    removeTeam,
+    flushToDatabase,
+  } = useScore()
+  const [formScores, setFormScores] = useState({})
+  const [formNames, setFormNames] = useState({})
   const [saved, setSaved] = useState(false)
+  const [addAmounts, setAddAmounts] = useState({})
   const hasUserEditedRef = useRef(false)
 
-  // ดึงค่าเก่าจาก context/DB มาใส่ฟอร์ม — แต่ถ้าผู้ใช้กำลังแก้ไขอยู่ ไม่ทับ (ป้องกันบัค)
   useEffect(() => {
     if (!hasUserEditedRef.current) {
       setFormScores({ ...scores })
+      setFormNames(prev => ({ ...teamNames, ...prev }))
     }
-  }, [scores])
+  }, [scores, teamNames, teamIds])
 
   const handleScoreChange = (team, value) => {
     hasUserEditedRef.current = true
     const n = value === '' ? '' : Math.max(0, parseInt(value, 10) || 0)
     setFormScores(prev => ({ ...prev, [team]: n === '' ? '' : n }))
+  }
+
+  const handleNameChange = (teamId, value) => {
+    hasUserEditedRef.current = true
+    setFormNames(prev => ({ ...prev, [teamId]: value }))
+  }
+
+  const handleNameBlur = (teamId) => {
+    const name = (formNames[teamId] ?? teamNames[teamId] ?? '').trim() || `ทีม ${teamId}`
+    setTeamName(teamId, name)
+    setFormNames(prev => ({ ...prev, [teamId]: name }))
   }
 
   const handleAdd = (team, amount) => {
@@ -29,14 +52,11 @@ export default function AdminPage() {
     const next = current + amount
     const nextScores = { ...formScores, [team]: next }
     const normalized = {}
-    TEAMS.forEach(t => { normalized[t] = Math.max(0, Number(nextScores[t]) || 0) })
+    teamIds.forEach(t => { normalized[t] = Math.max(0, Number(nextScores[t]) || 0) })
     setFormScores(normalized)
     setAllScores(normalized)
     setLastUpdate(new Date())
   }
-
-  // ค่าที่พิมพ์ในช่อง "บวก" แต่ละทีม (ทีม -> ตัวเลขที่พิมพ์)
-  const [addAmounts, setAddAmounts] = useState({ green: '', red: '', yellow: '', blue: '' })
 
   const handleAddCustom = (team) => {
     const raw = addAmounts[team]
@@ -49,19 +69,24 @@ export default function AdminPage() {
   const handleSave = async (e) => {
     e.preventDefault()
     const scoresToSet = {}
-    TEAMS.forEach(t => {
+    teamIds.forEach(t => {
       scoresToSet[t] = formScores[t] === '' ? 0 : Number(formScores[t])
     })
+    const namesToSet = {}
+    teamIds.forEach(t => {
+      namesToSet[t] = (formNames[t] ?? teamNames[t] ?? '').trim() || `ทีม ${t}`
+    })
+    teamIds.forEach(t => setTeamName(t, namesToSet[t]))
     const now = new Date()
     setAllScores(scoresToSet)
     setLastUpdate(now)
-    await flushToDatabase({ scores: scoresToSet, lastUpdate: now })
+    await flushToDatabase({ teamIds, teamNames: { ...teamNames, ...namesToSet }, scores: scoresToSet, lastUpdate: now })
     hasUserEditedRef.current = false
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
 
-  const teamColors = { green: '#00c853', red: '#c62828', yellow: '#ffc107', blue: '#1565c0' }
+  const getTeamColor = (index) => TEAM_COLOR_PALETTE[index % TEAM_COLOR_PALETTE.length]
 
   return (
     <div className="admin-page">
@@ -72,40 +97,69 @@ export default function AdminPage() {
 
       <form className="admin-form" onSubmit={handleSave}>
         <section className="admin-section">
-          <h2>คะแนนแต่ละทีม</h2>
+          <h2>คะแนนแต่ละทีม ({teamIds.length}/{MAX_TEAMS})</h2>
           <div className="admin-team-fields">
-            {TEAMS.map(team => (
-              <div key={team} className="admin-team-row" style={{ '--team-color': teamColors[team] }}>
-                <label className="admin-team-name">{TEAM_LABELS[team]}</label>
+            {teamIds.map((teamId, index) => (
+              <div key={teamId} className="admin-team-row" style={{ '--team-color': getTeamColor(index) }}>
+                <input
+                  type="text"
+                  className="admin-input admin-input-name"
+                  value={formNames[teamId] ?? teamNames[teamId] ?? ''}
+                  onChange={e => handleNameChange(teamId, e.target.value)}
+                  onBlur={() => handleNameBlur(teamId)}
+                  placeholder="ชื่อทีม"
+                  aria-label="ชื่อทีม"
+                />
                 <input
                   type="number"
                   min={0}
-                  value={formScores[team]}
-                  onChange={e => handleScoreChange(team, e.target.value)}
+                  value={formScores[teamId] ?? ''}
+                  onChange={e => handleScoreChange(teamId, e.target.value)}
                   className="admin-input admin-input-score"
-                  aria-label={`คะแนน ${TEAM_LABELS[team]}`}
+                  aria-label="คะแนน"
                 />
                 <div className="admin-add-custom">
                   <input
                     type="text"
                     inputMode="numeric"
                     placeholder="จำนวน"
-                    value={addAmounts[team]}
-                    onChange={e => setAddAmounts(prev => ({ ...prev, [team]: e.target.value }))}
-                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddCustom(team))}
+                    value={addAmounts[teamId] ?? ''}
+                    onChange={e => setAddAmounts(prev => ({ ...prev, [teamId]: e.target.value }))}
+                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddCustom(teamId))}
                     className="admin-input admin-input-add"
-                    aria-label={`บวกคะแนน ${TEAM_LABELS[team]}`}
+                    aria-label="บวกคะแนน"
                   />
-                  <button type="button" className="admin-add-btn admin-add-custom-btn" onClick={() => handleAddCustom(team)} title="บวกคะแนน">
+                  <button type="button" className="admin-add-btn admin-add-custom-btn" onClick={() => handleAddCustom(teamId)} title="บวกคะแนน">
                     + บวก
                   </button>
                 </div>
                 <div className="admin-add-btns">
-                  <button type="button" className="admin-add-btn" onClick={() => handleAdd(team, 10)}>+10</button>
-                  <button type="button" className="admin-add-btn" onClick={() => handleAdd(team, 100)}>+100</button>
+                  <button type="button" className="admin-add-btn" onClick={() => handleAdd(teamId, 10)}>+10</button>
+                  <button type="button" className="admin-add-btn" onClick={() => handleAdd(teamId, 100)}>+100</button>
+                  <button
+                    type="button"
+                    className="admin-remove-btn"
+                    onClick={() => removeTeam(teamId)}
+                    disabled={teamIds.length <= 1}
+                    title="ลบทีม"
+                    aria-label="ลบทีม"
+                  >
+                    ลบ
+                  </button>
                 </div>
               </div>
             ))}
+          </div>
+          <div className="admin-add-team-wrap">
+            <button
+              type="button"
+              className="admin-add-team-btn"
+              onClick={addTeam}
+              disabled={teamIds.length >= MAX_TEAMS}
+            >
+              + เพิ่มทีม
+            </button>
+            {teamIds.length >= MAX_TEAMS && <span className="admin-max-hint">(สูงสุด {MAX_TEAMS} ทีม)</span>}
           </div>
         </section>
 
