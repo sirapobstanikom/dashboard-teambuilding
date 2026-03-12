@@ -4,6 +4,7 @@
 -- ถ้ามีตาราง dashboard_state อยู่แล้ว ให้รันคำสั่งนี้เพิ่มคอลัมน์ (ถ้ายังไม่มี)
 -- alter table public.dashboard_state add column if not exists team_ids jsonb not null default '["green","red","yellow","blue"]';
 -- alter table public.dashboard_state add column if not exists team_names jsonb not null default '{"green":"ทีมสีเขียว","red":"ทีมสีแดง","yellow":"ทีมสีเหลือง","blue":"ทีมสีน้ำเงิน"}';
+-- เก็บสีแต่ละทีม (แก้ใน Admin ได้) — ต้องมีคอลัมน์นี้ถึงจะบันทึกสีลง DB ได้
 -- alter table public.dashboard_state add column if not exists team_colors jsonb default '{"green":"#00c853","red":"#c62828","yellow":"#ffc107","blue":"#1565c0"}';
 -- alter table public.dashboard_state add column if not exists dashboard_title text default 'ORIENTATION SPORT DAY';
 

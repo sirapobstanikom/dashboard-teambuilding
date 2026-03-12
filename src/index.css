@@ -681,6 +681,24 @@ body.route-admin #root {
 .team-card[data-team="yellow"] .progress-bar { background: linear-gradient(90deg, var(--yellow-dark), var(--yellow)); }
 .team-card[data-team="blue"] .progress-bar   { background: linear-gradient(90deg, var(--blue-dark), var(--blue)); }
 
+/* เมื่อแก้สีใน Admin — ให้สีที่กำหนดเองชนะสี default (green/red/yellow/blue) */
+.team-card.team-card--custom {
+  border-color: var(--team-color);
+  background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(0,0,0,0.5) 100%);
+}
+.team-card.team-card--custom .card-glow {
+  background: var(--team-color);
+  opacity: 0.3;
+}
+.team-card.team-card--custom .team-score {
+  color: var(--team-color);
+  text-shadow: 0 0 20px var(--team-color), 0 0 40px var(--team-color);
+}
+.team-card.team-card--custom .progress-bar {
+  background: var(--team-color);
+  box-shadow: 0 0 12px var(--team-color);
+}
+
 .medal-count {
   font-size: clamp(0.9rem, 1.1vw, 1rem);
   display: flex;

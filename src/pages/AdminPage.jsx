@@ -141,6 +141,7 @@ export default function AdminPage() {
                   className="admin-color-picker"
                   value={getTeamColor(teamId)}
                   onChange={e => setTeamColor(teamId, e.target.value)}
+                  onBlur={() => setTimeout(() => flushToDatabase(), 0)}
                   title="สีทีม"
                   aria-label="สีทีม"
                 />
